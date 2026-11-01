@@ -1,0 +1,109 @@
+name: Dynamic Test-Subset Routing CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  analyze-and-route:
+    name: Test Impact Analysis & Route Selection
+    runs-on: ubuntu-latest
+    outputs:
+      strategy: ${{ steps.router.outputs.strategy }}
+      test_files: ${{ steps.router.outputs.test_files }}
+      has_tests: ${{ steps.router.outputs.has_tests }}
+
+    steps:
+      - name: Checkout Code with Complete History
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Execute Dynamic Test Router
+        id: router
+        run: |
+          python -c "
+          import sys, os
+          from src.test_router import DynamicTestRouter
+          router = DynamicTestRouter()
+          changed = router.get_git_diff_files('origin/main', 'HEAD')
+          decision = router.route_tests(changed)
+          
+          strategy = decision['strategy']
+          tests = ' '.join(decision['selected_tests'])
+          has_tests = 'true' if decision['selected_tests'] else 'false'
+          
+          print(f'Detected changes: {changed}')
+          print(f'Selected Strategy: {strategy}')
+          print(f'Selected Tests: {tests}')
+          
+          # Write to GITHUB_OUTPUT
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'strategy={strategy}\n')
+              f.write(f'test_files={tests}\n')
+              f.write(f'has_tests={has_tests}\n')
+          "
+
+  execute-routed-tests:
+    name: Execute Routed Test Subset
+    needs: analyze-and-route
+    runs-on: ubuntu-latest
+    if: needs.analyze-and-route.outputs.has_tests == 'true'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Targeted Pytest Subset
+        run: |
+          echo "Executing targeted test subset: ${{ needs.analyze-and-route.outputs.test_files }}"
+          pytest -v ${{ needs.analyze-and-route.outputs.test_files }}
+
+  skip-notification:
+    name: Skip Notification
+    needs: analyze-and-route
+    runs-on: ubuntu-latest
+    if: needs.analyze-and-route.outputs.has_tests == 'false'
+
+    steps:
+      - name: Log Test Skip
+        run: |
+          echo "Strategy was ${{ needs.analyze-and-route.outputs.strategy }}. Zero tests were required."
+
+  routing-benchmark:
+    name: Run Routing Benchmarks
+    needs: analyze-and-route
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Routing Benchmark Suite
+        run: python benchmark_routing.py
