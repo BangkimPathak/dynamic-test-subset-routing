@@ -1,0 +1,47 @@
+[
+  {
+    "scenario": "Scenario 1: Naive Full Run",
+    "changed_files": "N/A (All Executed)",
+    "strategy": "FULL_REGRESSION",
+    "tests_selected": 6,
+    "tests_skipped": 0,
+    "duration_seconds": 0.48,
+    "efficiency": "1.00x (Baseline)"
+  },
+  {
+    "scenario": "Scenario 2: Docs Only",
+    "changed_files": "README.md",
+    "strategy": "SKIP_ALL",
+    "tests_selected": 0,
+    "tests_skipped": 6,
+    "duration_seconds": 0.001,
+    "efficiency": "480.5x Faster (100% Skipped)"
+  },
+  {
+    "scenario": "Scenario 3: Isolated Change",
+    "changed_files": "src/inventory.py",
+    "strategy": "TARGETED_SUBSET",
+    "tests_selected": 1,
+    "tests_skipped": 5,
+    "duration_seconds": 0.08,
+    "efficiency": "6.0x Faster (83% Skipped)"
+  },
+  {
+    "scenario": "Scenario 4: Transitive Change",
+    "changed_files": "src/pricing.py",
+    "strategy": "TARGETED_SUBSET",
+    "tests_selected": 3,
+    "tests_skipped": 3,
+    "duration_seconds": 0.241,
+    "efficiency": "2.0x Faster (50% Skipped)"
+  },
+  {
+    "scenario": "Scenario 5: 3-Way Parallel Sharding",
+    "changed_files": "Full Suite Sharded",
+    "strategy": "PARALLEL_MATRIX",
+    "tests_selected": 6,
+    "tests_skipped": 0,
+    "duration_seconds": 0.161,
+    "efficiency": "3.0x Faster (Concurrency)"
+  }
+]
